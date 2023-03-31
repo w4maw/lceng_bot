@@ -1,8 +1,17 @@
 telegram:
-  apiUrl: https://api.telegram.org/
+  apiUrl: https://api.telegram.org/bot
   webhookPath:
   botName:
   botToken:
 
+shell:
+  dir:
+
 server:
   port: 8080
+
+logging:
+  level:
+    linux:
+      commands:
+        execution: DEBUG
