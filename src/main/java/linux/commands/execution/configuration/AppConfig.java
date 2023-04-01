@@ -42,6 +42,7 @@ public class AppConfig {
                         .forEach((name, values) -> values.forEach(value -> sb.append("%s: %s".formatted(name, values))
                                 .append("\n")));
                 log.debug(sb.toString());
+                log.debug(clientRequest.body().toString());
             }
             return Mono.just(clientRequest);
         });

@@ -4,21 +4,27 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum CommandType {
-    START("/start"),
-    HELP("/help"),
-    DATE("/date"),
-    SCAN("/scan"),
-    PORT("/port"),
-    TEST("/test"),
-    NONE("");
+    START("/start", 1),
+    HELP("/help", 1),
+    DATE("/date", 1),
+    SCAN("/scan", 2),
+    PORT("/port", 3),
+    TEST("/test", 1),
+    NONE("", 0);
     private String msg;
+    private int length;
 
-    CommandType(String msg) {
+    CommandType(String msg, int length) {
         this.msg = msg;
+        this.length = length;
     }
 
     public String getMsg() {
         return msg;
+    }
+
+    public int getLength() {
+        return length;
     }
 
     public static Optional<CommandType> fromMsg(String msg) {

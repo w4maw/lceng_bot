@@ -60,17 +60,12 @@ public class BotService{
                     case DATE -> "date";
                     case SCAN -> "nmap %s".formatted(commandParts[1]);
                     case PORT -> "nmap -p%s %s".formatted(commandParts[2], commandParts[1]);
-                    default -> throw new RuntimeException("");
+                    default -> throw new RuntimeException("Команда еще не реализована");
                 };
     }
 
     private Mono<Boolean> validate(CommandType command, String[] commandParts) {
-        return switch (command) {
-            case DATE -> commandParts.length == 1 ? Mono.just(true) : Mono.error(RuntimeException::new);
-            case SCAN -> commandParts.length == 2 ? Mono.just(true) : Mono.error(RuntimeException::new);
-            case PORT -> commandParts.length == 3 ? Mono.just(true) : Mono.error(RuntimeException::new);
-            default -> Mono.empty();
-        };
+        return commandParts.length == command.getLength() ? Mono.just(true) : Mono.error(IllegalArgumentException::new);
     }
 
     private Mono<Void> sendMessage(String chatId, String text) {
