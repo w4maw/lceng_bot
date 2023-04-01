@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 @Slf4j
 @Service
@@ -16,19 +16,25 @@ public class ShellService {
     String shellDir;
 
     public Mono<String> execute(String command) {
-        log.info("Выполнение команды {}", command);
-        var builder = new ProcessBuilder()
-                .directory(new File(shellDir))
-                .command("bash", "-c", command);
-        try {
-            var process = builder.start();
-            var byteResult = process.getInputStream().readAllBytes();
-            var result = new String(byteResult, StandardCharsets.UTF_8);
-            log.info("Результат выполнения команды:\n {}", result);
-            return Mono.just(result);
-        } catch (IOException e) {
-            log.error("При запуске ProcessBuilder возникла ошибка: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
+        return Mono.create(monoSink -> {
+            try {
+                log.info("Выполнение команды {}", command);
+                var builder = new ProcessBuilder()
+                        .directory(new File(shellDir))
+                        .command("bash", "-c", command);
+                var process = builder.start();
+                var result = new StringBuilder();
+                var scanner = new Scanner(process.getInputStream());
+                while (scanner.hasNext()) {
+                    result.append(scanner.nextLine())
+                            .append("\n");
+                }
+                log.info("Результат выполнения команды:\n {}", result);
+                monoSink.success(result.toString());
+            } catch (IOException e) {
+                log.error("При запуске ProcessBuilder возникла ошибка: {}", e.getMessage());
+                monoSink.error(e);
+            }
+        });
     }
 }
