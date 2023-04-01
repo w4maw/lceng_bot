@@ -1,6 +1,5 @@
 package linux.commands.execution.service;
 
-import linux.commands.execution.configuration.TelegramConfig;
 import linux.commands.execution.model.CommandType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,21 +12,19 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import reactor.core.publisher.Mono;
 import java.security.SecureRandom;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class BotService{
-    private TelegramConfig telegramConfig;
     private WebClient telegramWebClient;
     private ShellService shellService;
 
     public BotService(
             @Qualifier("telegram") WebClient webclientTelegram,
-            TelegramConfig telegramConfig,
             ShellService shellService
     ) {
-        this.telegramConfig = telegramConfig;
         this.telegramWebClient = webclientTelegram;
         this.shellService = shellService;
     }
@@ -49,24 +46,22 @@ public class BotService{
 
     private Mono<Void> execute(CommandType commandType, String chatId, String text) {
         var commandParts = text.trim().replaceAll("/", "").split("\\s+");
-        switch (commandType) {
-            case DATE -> validate(commandType, commandParts).subscribe(
-                    unused -> shellService.execute("date")
-                            .subscribe(resp -> sendMessage(chatId, resp)),
-                    throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
-            );
-            case SCAN -> validate(commandType, commandParts).subscribe(
-                    unused -> shellService.execute("nmap %s".formatted(commandParts[1]))
-                            .subscribe(resp -> sendMessage(chatId, resp)),
-                    throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
-            );
-            case PORT -> validate(commandType, commandParts).subscribe(
-                    unused -> shellService.execute("nmap -p%s %s".formatted(commandParts[2], commandParts[1]))
-                            .subscribe(resp -> sendMessage(chatId, resp)),
-                    throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
-            );
-        }
+        validate(commandType, commandParts).subscribe(
+                unused -> shellService.execute(assembleCommand(commandType, commandParts).get())
+                        .subscribe(resp -> sendMessage(chatId, resp)),
+                throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
+        );
         return Mono.empty();
+    }
+
+    private Supplier<String> assembleCommand(CommandType commandType, String[] commandParts) {
+        return () ->
+                switch (commandType) {
+                    case DATE -> "date";
+                    case SCAN -> "nmap %s".formatted(commandParts[1]);
+                    case PORT -> "nmap -p%s %s".formatted(commandParts[2], commandParts[1]);
+                    default -> throw new RuntimeException("");
+                };
     }
 
     private Mono<Boolean> validate(CommandType command, String[] commandParts) {
