@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>linux.commands</groupId>
 	<artifactId>execution</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.1</version>
 	<name>execution</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Linux commands execution telegram bot</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

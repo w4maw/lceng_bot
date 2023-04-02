@@ -20,8 +20,7 @@ public class ShellService {
             try {
                 log.info("Выполнение команды {}", command);
                 var builder = new ProcessBuilder()
-                        .directory(new File(shellDir))
-                        .command("bash", "-c", command);
+                        .command("sh", "-c", command);
                 var process = builder.start();
                 var result = new StringBuilder();
                 var scanner = new Scanner(process.getInputStream());

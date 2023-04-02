@@ -4,9 +4,6 @@ telegram:
   botName:
   botToken:
 
-shell:
-  dir:
-
 server:
   port: 8080
 
