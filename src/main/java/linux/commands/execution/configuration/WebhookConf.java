@@ -3,11 +3,11 @@ package linux.commands.execution.configuration;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-@Profile("prod")
 @Slf4j
+@Configuration
 public class WebhookConf {
     @Autowired
     private TelegramConfig telegramConfig;
