@@ -34,7 +34,6 @@ public class AppConfig {
                 log.debug("Request: Method {} {}", clientRequest.method(), clientRequest.url());
                 clientRequest.headers()
                         .forEach((name, values) -> values.forEach(value -> log.debug("{}: {}", name, values)));
-                log.debug("Body: \n{}", clientRequest.body());
             }
             return Mono.just(clientRequest);
         });

@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: lceng-bot
-          image: w4maw/lceng_bot:0.17
+          image: w4maw/lceng_bot:0.19
           ports:
             - containerPort: 8080
           volumeMounts:
@@ -49,8 +49,6 @@ data:
       webhookPath: 
       botName: 
       botToken: 
-    server:
-      port: 8080
     logging:
       level:
         linux:

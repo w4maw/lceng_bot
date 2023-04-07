@@ -9,7 +9,7 @@ public enum CommandType {
     DATE("/date", 1),
     SCAN("/scan", 2),
     PORT("/port", 3),
-    TEST("/test", 1),
+    MAN("/man", 2),
     NONE("", 0);
     private String msg;
     private int length;

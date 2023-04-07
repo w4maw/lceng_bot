@@ -8,10 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import reactor.core.publisher.Mono;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -36,8 +34,7 @@ public class BotService{
         var commandType = CommandType.fromMsg(tCommand).orElse(CommandType.NONE);
         return switch (commandType) {
             case START, HELP -> sendMessage(chatId, getHelpMessage());
-            case SCAN, PORT, DATE -> execute(commandType, chatId, text);
-            case TEST -> sendMessage(chatId, randomText(300));
+            case SCAN, PORT, DATE, MAN -> execute(commandType, chatId, text);
             case NONE -> sendMessage(chatId, "Неизвестная комманда %s.\nСписок доступных комманд:\n%s".formatted(tCommand, getHelpMessage()));
         };
     }
@@ -58,6 +55,7 @@ public class BotService{
                     case DATE -> "date";
                     case SCAN -> "nmap %s".formatted(commandParts[1]);
                     case PORT -> "nmap -p%s %s".formatted(commandParts[2], commandParts[1]);
+                    case MAN -> "curl -Ls -o /dev/null -w %{url_effective} https://manpages.debian.org/bullseye/".concat(commandParts[1]);
                     default -> throw new RuntimeException("Команда еще не реализована");
                 };
     }
@@ -67,7 +65,6 @@ public class BotService{
     }
 
     private Mono<Void> sendMessage(String chatId, String text) {
-//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>(2);
         var response = new HashMap<String, String>();
         response.put("chat_id", chatId);
         response.put("text", text);
@@ -80,7 +77,6 @@ public class BotService{
                 .bodyToMono(String.class)
                 .subscribe(log::debug, throwable -> {
                     log.error("Телеграм вернул ошибку: {}", throwable.getMessage());
-                    throwable.printStackTrace();
                 });
         return Mono.empty();
     }
@@ -89,15 +85,9 @@ public class BotService{
         return """
                 /help - текущее сообщение;
                 /date - вывести текущую дату;
+                /man command - вернет ссылку на man по команде
                 /scan example.com - сканировать хост example.com;
                 /port example.com 80 - проверить открыт ли порт 80;
                 """;
-    }
-
-    private String randomText(int num) {
-        var random = new SecureRandom();
-        return random.ints(num)
-                .mapToObj(Integer::toString)
-                .collect(Collectors.joining(""));
     }
 }

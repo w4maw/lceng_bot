@@ -1,6 +1,6 @@
-FROM bellsoft/liberica-openjdk-debian:17
+FROM bellsoft/liberica-openjdk-alpine:17
 WORKDIR /app
-RUN apt install nmap -y && mkdir ./config
+RUN apk add nmap curl && mkdir ./config
 COPY target/execution-*.jar .
 RUN mv *.jar app.jar
 EXPOSE 8080/tcp
