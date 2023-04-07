@@ -5,13 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import reactor.core.publisher.Mono;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -69,17 +67,21 @@ public class BotService{
     }
 
     private Mono<Void> sendMessage(String chatId, String text) {
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>(2);
-        formData.set("chat_id", chatId);
-        formData.set("text", text);
+//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>(2);
+        var response = new HashMap<String, String>();
+        response.put("chat_id", chatId);
+        response.put("text", text);
         log.info("Отправляю ответ...");
         telegramWebClient.post()
                 .uri("/sendMessage")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(response)
                 .retrieve()
                 .bodyToMono(String.class)
-                .subscribe(log::debug, throwable -> log.error("Телеграм вернул ошибку: {}", throwable.getMessage()));
+                .subscribe(log::debug, throwable -> {
+                    log.error("Телеграм вернул ошибку: {}", throwable.getMessage());
+                    throwable.printStackTrace();
+                });
         return Mono.empty();
     }
 

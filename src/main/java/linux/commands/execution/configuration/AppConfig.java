@@ -31,14 +31,10 @@ public class AppConfig {
     private ExchangeFilterFunction logRequest() {
         return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
             if (log.isDebugEnabled()) {
-                StringBuilder sb = new StringBuilder("Request: \n")
-                        .append("Method: %s".formatted(clientRequest.method()))
-                        .append(" ").append(clientRequest.url());
+                log.debug("Request: Method {} {}", clientRequest.method(), clientRequest.url());
                 clientRequest.headers()
-                        .forEach((name, values) -> values.forEach(value -> sb.append("%s: %s".formatted(name, values))
-                                .append("\n")));
-                log.debug(sb.toString());
-                log.debug(clientRequest.body().toString());
+                        .forEach((name, values) -> values.forEach(value -> log.debug("{}: {}", name, values)));
+                log.debug("Body: \n{}", clientRequest.body());
             }
             return Mono.just(clientRequest);
         });

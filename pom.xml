@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>linux.commands</groupId>
 	<artifactId>execution</artifactId>
-	<version>0.12</version>
+	<version>0.17</version>
 	<name>execution</name>
 	<description>Linux commands execution telegram bot</description>
 	<properties>
