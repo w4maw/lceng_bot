@@ -32,6 +32,13 @@ spec:
           volumeMounts:
             - name: bot-conf
               mountPath: /app/config
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1000m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
 
       volumes:
         - name: bot-conf
