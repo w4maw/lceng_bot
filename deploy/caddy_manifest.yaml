@@ -1,0 +1,70 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: route-edge-secured
+spec:
+  host: lce.apps.okd.sbc-openshift.ru
+  to:
+    kind: Service
+    name: caddy-service
+  tls:
+    termination: passthrough
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-service
+spec:
+  selector:
+    app: caddy
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+    - port: 443
+      name: https
+      targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caddy
+  template:
+    metadata:
+      labels:
+        app: caddy
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2.6.4
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: caddy-conf
+              mountPath: /etc/caddy
+
+      volumes:
+        - name: caddy-conf
+          configMap:
+            name: caddy-config
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: caddy-config
+data:
+  Caddyfile: |
+    {
+      storage file_system {
+        root /tmp
+      }
+    }
+    https://lce.apps.okd.sbc-openshift.ru:443 {
+      reverse_proxy bot-service:80
+    }
