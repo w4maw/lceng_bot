@@ -3,7 +3,7 @@ kind: Route
 metadata:
   name: route-edge-secured
 spec:
-  host: lce.apps.okd.sbc-openshift.ru
+  host: lceng.apps.okd.sbc-openshift.ru
   to:
     kind: Service
     name: caddy-service
@@ -72,6 +72,11 @@ data:
         root /tmp
       }
     }
-    https://lce.apps.okd.sbc-openshift.ru:443 {
-      reverse_proxy bot-service:80
+    lceng.apps.okd.sbc-openshift.ru {
+      encode zstd gzip
+      reverse_proxy bot-service:80 {
+        header_up Host {http.reverse_proxy.upstream.hostport}
+        health_uri /actuator/health
+        health_port 80
+      }
     }

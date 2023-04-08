@@ -14,7 +14,7 @@ public class WebHookController {
     @Autowired
     BotService botService;
 
-    @PostMapping("/webhook")
+    @PostMapping("/")
     public Mono<Void> onUpdateReceived(@RequestBody Update update) {
         return botService.onWebhookUpdateReceived(update);
     }
