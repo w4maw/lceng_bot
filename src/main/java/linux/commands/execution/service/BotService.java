@@ -42,23 +42,25 @@ public class BotService{
     private Mono<Void> execute(CommandType commandType, String chatId, String text) {
         var commandParts = text.trim().replaceAll("/", "").split("\\s+");
         validate(commandType, commandParts).subscribe(
-                unused -> shellService.execute(assembleCommand(commandType, commandParts))
+                unused -> assembleCommand(commandType, commandParts)
+                        .flatMap(shellService::execute)
                         .subscribe(resp -> sendMessage(chatId, resp)),
                 throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
         );
         return Mono.empty();
     }
 
-    private String assembleCommand(CommandType commandType, String[] commandParts) {
-        return
-                switch (commandType) {
-                    case DATE -> "date";
-                    case SCAN -> "nmap %s".formatted(commandParts[1]);
-                    case PORT -> "nmap -p%s %s".formatted(commandParts[2], commandParts[1]);
-                    case MAN -> "curl -Ls -o /dev/null -w %{url_effective} https://manpages.debian.org/bullseye/".concat(commandParts[1]);
-                    case IP -> "nslookup %s 1.1.1.1".formatted(commandParts[1]);
-                    default -> throw new RuntimeException("Команда еще не реализована");
-                };
+    private Mono<String> assembleCommand(CommandType commandType, String[] commandParts) {
+        return Mono.create(monoSink -> {
+            switch (commandType) {
+                case DATE -> monoSink.success("date");
+                case SCAN -> monoSink.success("nmap %s".formatted(commandParts[1]));
+                case PORT -> monoSink.success("nmap -p%s %s".formatted(commandParts[2], commandParts[1]));
+                case MAN -> monoSink.success("curl -Ls -o /dev/null -w %{url_effective} https://manpages.debian.org/bullseye/".concat(commandParts[1]));
+                case IP -> monoSink.success("nslookup %s 1.1.1.1".formatted(commandParts[1]));
+                default -> monoSink.error(new RuntimeException("Команда еще не реализована"));
+            }
+        });
     }
 
     private Mono<Boolean> validate(CommandType command, String[] commandParts) {
