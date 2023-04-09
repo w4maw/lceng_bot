@@ -10,6 +10,7 @@ public enum CommandType {
     SCAN("/scan", 2),
     PORT("/port", 3),
     MAN("/man", 2),
+    IP("/ip", 2),
     NONE("", 0);
     private String msg;
     private int length;

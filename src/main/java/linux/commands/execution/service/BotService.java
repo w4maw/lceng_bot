@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import reactor.core.publisher.Mono;
 import java.util.HashMap;
-import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -34,7 +34,7 @@ public class BotService{
         var commandType = CommandType.fromMsg(tCommand).orElse(CommandType.NONE);
         return switch (commandType) {
             case START, HELP -> sendMessage(chatId, getHelpMessage());
-            case SCAN, PORT, DATE, MAN -> execute(commandType, chatId, text);
+            case SCAN, PORT, DATE, MAN, IP -> execute(commandType, chatId, text);
             case NONE -> sendMessage(chatId, "Неизвестная комманда %s.\nСписок доступных комманд:\n%s".formatted(tCommand, getHelpMessage()));
         };
     }
@@ -42,20 +42,21 @@ public class BotService{
     private Mono<Void> execute(CommandType commandType, String chatId, String text) {
         var commandParts = text.trim().replaceAll("/", "").split("\\s+");
         validate(commandType, commandParts).subscribe(
-                unused -> shellService.execute(assembleCommand(commandType, commandParts).get())
+                unused -> shellService.execute(assembleCommand(commandType, commandParts))
                         .subscribe(resp -> sendMessage(chatId, resp)),
                 throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
         );
         return Mono.empty();
     }
 
-    private Supplier<String> assembleCommand(CommandType commandType, String[] commandParts) {
-        return () ->
+    private String assembleCommand(CommandType commandType, String[] commandParts) {
+        return
                 switch (commandType) {
                     case DATE -> "date";
                     case SCAN -> "nmap %s".formatted(commandParts[1]);
                     case PORT -> "nmap -p%s %s".formatted(commandParts[2], commandParts[1]);
                     case MAN -> "curl -Ls -o /dev/null -w %{url_effective} https://manpages.debian.org/bullseye/".concat(commandParts[1]);
+                    case IP -> "nslookup %s 1.1.1.1".formatted(commandParts[1]);
                     default -> throw new RuntimeException("Команда еще не реализована");
                 };
     }
@@ -76,7 +77,7 @@ public class BotService{
                 .retrieve()
                 .bodyToMono(String.class)
                 .subscribe(log::debug, throwable -> {
-                    log.error("Телеграм вернул ошибку: {}", throwable.getMessage());
+                    log.error("Телеграм вернул ошибку: {}", ((WebClientResponseException.BadRequest) throwable).getResponseBodyAsString());
                 });
         return Mono.empty();
     }
@@ -88,6 +89,7 @@ public class BotService{
                 /man command - вернет ссылку на man по команде
                 /scan example.com - сканировать хост example.com;
                 /port example.com 80 - проверить открыт ли порт 80;
+                /ip example.com - узнать ip адрес example.com
                 """;
     }
 }
