@@ -2,50 +2,30 @@ package linux.commands.execution.service;
 
 import linux.commands.execution.model.CommandType;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.telegram.telegrambots.meta.api.objects.Update;
 import reactor.core.publisher.Mono;
-import java.util.HashMap;
 
 @Service
 @Slf4j
 public class BotService{
-    private WebClient telegramWebClient;
     private ShellService shellService;
+    private NetworkService networkService;
 
     public BotService(
-            @Qualifier("telegram") WebClient webclientTelegram,
-            ShellService shellService
+            ShellService shellService,
+            NetworkService networkService
     ) {
-        this.telegramWebClient = webclientTelegram;
         this.shellService = shellService;
+        this.networkService = networkService;
     }
 
-    public Mono<Void> onWebhookUpdateReceived(Update update) {
-        var message = update.getMessage();
-        log.info("Получено сообщение: {} от {}", message.getText(), update.getMessage().getChat().getUserName());
-        var chatId = message.getChatId().toString();
-        var text = message.getText();
-        var tCommand = text.split("\\s+")[0];
-        var commandType = CommandType.fromMsg(tCommand).orElse(CommandType.NONE);
-        return switch (commandType) {
-            case START, HELP -> sendMessage(chatId, getHelpMessage());
-            case SCAN, PORT, DATE, MAN, IP -> execute(commandType, chatId, text);
-            case NONE -> sendMessage(chatId, "Неизвестная комманда %s.\nСписок доступных комманд:\n%s".formatted(tCommand, getHelpMessage()));
-        };
-    }
-
-    private Mono<Void> execute(CommandType commandType, String chatId, String text) {
+    public Mono<Void> execute(CommandType commandType, String chatId, String text) {
         var commandParts = text.trim().replaceAll("/", "").split("\\s+");
         validate(commandType, commandParts).subscribe(
                 unused -> assembleCommand(commandType, commandParts)
                         .flatMap(shellService::execute)
-                        .subscribe(resp -> sendMessage(chatId, resp)),
-                throwable -> sendMessage(chatId, "Неправильное количество аргументов.")
+                        .subscribe(resp -> networkService.sendMessage(chatId, resp)),
+                throwable -> networkService.sendMessage(chatId, "Неправильное количество аргументов.")
         );
         return Mono.empty();
     }
@@ -67,24 +47,7 @@ public class BotService{
         return commandParts.length == command.getLength() ? Mono.just(true) : Mono.error(IllegalArgumentException::new);
     }
 
-    private Mono<Void> sendMessage(String chatId, String text) {
-        var response = new HashMap<String, String>();
-        response.put("chat_id", chatId);
-        response.put("text", text);
-        log.info("Отправляю ответ...");
-        telegramWebClient.post()
-                .uri("/sendMessage")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(response)
-                .retrieve()
-                .bodyToMono(String.class)
-                .subscribe(log::debug, throwable -> {
-                    log.error("Телеграм вернул ошибку: {}", ((WebClientResponseException.BadRequest) throwable).getResponseBodyAsString());
-                });
-        return Mono.empty();
-    }
-
-    private String getHelpMessage() {
+    public String getHelpMessage() {
         return """
                 /help - текущее сообщение;
                 /date - вывести текущую дату;

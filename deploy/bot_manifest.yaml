@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: lceng-bot
-          image: w4maw/lceng_bot:0.23
+          image: w4maw/lceng_bot:0.24
           ports:
             - containerPort: 8080
           volumeMounts:
