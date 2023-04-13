@@ -45,10 +45,10 @@ spec:
           resources:
             requests:
               memory: "1Gi"
-              cpu: "1000m"
+              cpu: "2000m"
             limits:
               memory: "1Gi"
-              cpu: "1000m"
+              cpu: "2000m"
 
       volumes:
         - name: bot-conf
