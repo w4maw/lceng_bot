@@ -3,7 +3,7 @@ kind: Route
 metadata:
   name: route-edge-secured
 spec:
-  host: lceng.apps.okd.sbc-openshift.ru
+  host:
   to:
     kind: Service
     name: caddy-service
