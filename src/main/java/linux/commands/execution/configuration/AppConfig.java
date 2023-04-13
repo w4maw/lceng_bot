@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -19,29 +18,22 @@ public class AppConfig {
         this.telegramConfig = telegramConfig;
     }
 
-    @Bean
-    public SetWebhook setWebhook() {
-        return SetWebhook.builder().url(telegramConfig.getWebhookPath()).build();
-    }
 
     @Bean
     @Qualifier("telegram")
     public WebClient webclientTelegram() {
-        WebClient.builder()
-                .filter(this.logRequest());
-        return WebClient.create(telegramConfig.getApiUrl() + telegramConfig.getBotToken());
+        return WebClient.builder()
+                .filter(this.logRequest())
+                .baseUrl(telegramConfig.getApiUrl() + telegramConfig.getBotToken())
+                .build();
     }
 
     private ExchangeFilterFunction logRequest() {
         return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
             if (log.isDebugEnabled()) {
-                StringBuilder sb = new StringBuilder("Request: \n")
-                        .append("Method: %s".formatted(clientRequest.method()))
-                        .append(" ").append(clientRequest.url());
+                log.debug("Request: Method {} {}", clientRequest.method(), clientRequest.url());
                 clientRequest.headers()
-                        .forEach((name, values) -> values.forEach(value -> sb.append("%s: %s".formatted(name, values))
-                                .append("\n")));
-                log.debug(sb.toString());
+                        .forEach((name, values) -> values.forEach(value -> log.debug("{}: {}", name, values)));
             }
             return Mono.just(clientRequest);
         });

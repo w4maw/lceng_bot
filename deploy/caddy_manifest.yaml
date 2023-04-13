@@ -1,0 +1,82 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: route-edge-secured
+spec:
+  host: lceng.apps.okd.sbc-openshift.ru
+  to:
+    kind: Service
+    name: caddy-service
+  tls:
+    termination: passthrough
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-service
+spec:
+  selector:
+    app: caddy
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+    - port: 443
+      name: https
+      targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caddy
+  template:
+    metadata:
+      labels:
+        app: caddy
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2.6.4
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: caddy-conf
+              mountPath: /etc/caddy
+          resources:
+            requests:
+              memory: "0.5Gi"
+              cpu: "200m"
+            limits:
+              memory: "0.5Gi"
+              cpu: "200m"
+
+      volumes:
+        - name: caddy-conf
+          configMap:
+            name: caddy-config
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: caddy-config
+data:
+  Caddyfile: |
+    {
+      storage file_system {
+        root /tmp
+      }
+    }
+    lceng.apps.okd.sbc-openshift.ru {
+      encode zstd gzip
+      reverse_proxy bot-service:80 {
+        header_up Host {http.reverse_proxy.upstream.hostport}
+        health_uri /actuator/health
+        health_port 80
+      }
+    }

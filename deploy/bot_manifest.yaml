@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot-service
+spec:
+  selector:
+    app: bot
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+    spec:
+      containers:
+        - name: lceng-bot
+          image: w4maw/lceng_bot:0.24
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: bot-conf
+              mountPath: /app/config
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "2000m"
+            limits:
+              memory: "1Gi"
+              cpu: "2000m"
+
+      volumes:
+        - name: bot-conf
+          configMap:
+            name: bot-config
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: bot-config
+data:
+  application.yaml: |
+    telegram:
+      apiUrl: https://api.telegram.org/bot
+      webhookPath: 
+      botName: 
+      botToken: 
+    logging:
+      level:
+        linux:
+          commands:
+            execution: DEBUG
