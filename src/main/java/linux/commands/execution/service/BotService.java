@@ -4,6 +4,7 @@ import linux.commands.execution.model.CommandType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @Slf4j
@@ -21,7 +22,7 @@ public class BotService{
 
     public Mono<Void> execute(CommandType commandType, String chatId, String text) {
         var commandParts = text.trim().replaceAll("/", "").split("\\s+");
-        validate(commandType, commandParts).subscribe(
+        validate(commandType, commandParts).subscribeOn(Schedulers.boundedElastic()).subscribe(
                 unused -> assembleCommand(commandType, commandParts)
                         .flatMap(shellService::execute)
                         .subscribe(resp -> networkService.sendMessage(chatId, resp)),
